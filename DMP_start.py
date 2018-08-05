@@ -39,9 +39,9 @@ class Login:
         logRes = self.c.fetchall()
         if len(logRes) == 1:
             print("Zalogowano!")
-            print(logRes)
+            # print(logRes)
             logRes_id = logRes[0]
-            currentUser = User(logRes_id)
+            currentUser = User(logRes[0][0])
         else:
             print("Niepoprawne login lub/i hasło!")
 
