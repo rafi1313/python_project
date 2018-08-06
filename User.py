@@ -1,9 +1,11 @@
 import pymysql
 from DBConnect import DBConnect
+from Project import Project
 
 class User:
     def __init__(self, _id):
         self.user_id = _id
+        print("user ID: "+str(self.user_id))
         self.conn = pymysql.connect('localhost', 'root', 'SqlAccount!23', 'DMP', charset='utf8')
         self.c = self.conn.cursor()
         self.menu()
@@ -40,9 +42,14 @@ class User:
                 self.addProject()
             elif option == "U":
                 self.deleteProject()
+            elif option == "R":
+                self.showDrawings()
+            elif option == "Z":
+                self.showPaidDrawings()
+            elif option == "N":
+                self.showUnpaidDrawings()
             elif option == "Q":
                 loop = False
-                # break
             else:
                 print("Nieznana opcja!")
 
@@ -60,7 +67,7 @@ class User:
 
         query = "INSERT INTO CUSTOMERS (customers_name, first_name, last_name, phone_number, email, id_Users)" \
                 " values ('" + clientName + "', '" + clientFirstName + "', '" + clientLastName + "', " + \
-                clientPhoneNumber + ", '" + clientEmail + "'," + str(self.user_id) + ")"
+                clientPhoneNumber.replace(" ", "") + ", '" + clientEmail + "'," + str(self.user_id) + ")"
 
         self.c.execute(query)
         self.conn.commit()
@@ -91,21 +98,50 @@ class User:
         for row in result:
             print('|%3i|%20s|%20s|%20s|%12s|%20s' % (row[0], row[1], row[2], row[3], row[4], row[5]))
 
-
     def addProject(self):
         # pokazanie listy projektów
         self.showClients()
 
         client = input("Wybierz ID klienta do dodania projektu: ")
         while client == "":
+            print("Musisz wybrać ID klienta")
             client = input("Wybierz ID klienta do dodania projektu: ")
-        projectName = input("Podaj nazwę projektu")
+        projectName = input("Podaj nazwę projektu: ")
         while projectName == "":
-            print("Musisz podać nazwę projektu")
-            projectName = input("Podaj nazwę projektu")
+            print("Musisz podać nazwę projektu!")
+            projectName = input("Podaj nazwę projektu: ")
+        projectDate = input("Podaj datę przyjęcia projektu [YYYY-MM-DD]: ")
+        projectDeadline = input("Podaj termin wykonania projektu [YYYY-MM-DD]: ")
+        projectRate = input("Podaj stawkę za A0: ")
+        self.c.execute("SET FOREIGN_KEY_CHECKS=0")
+        insertQueryToProjects = "INSERT INTO projects (project_name, rate_per_drawing, project_date, " \
+                                "project_deadline, id_customers) values ('" + projectName + "', " + projectRate +\
+                                ", '"+projectDate+"', '"+projectDeadline+"', " + str(self.user_id)+")"
 
+        self.c.execute(insertQueryToProjects)
+        self.conn.commit()
 
-        # id_projects, project_name, rate_per_drawing, project_date, project_deadline, id_customers
+        query = "INSERT INTO projects_has_users (Users_id_Users, customers_id_customers) " \
+                "values (" + client + ", " + str(self.user_id) + ")"
+        self.c.execute(query)
+        self.conn.commit()
+        print("Dodano projekt!")
 
     def deleteProject(self):
         print("1")
+
+    def manageProject(self):
+        self.showProjects()
+        selectedProject = input("Podaj ID projektu do zarządzania: ")
+        projectManage = Project(selectedProject)
+        projectManage.menu()
+    def showDrawings(self):
+        drawingsQuery = "SELECT customers_name, drawing_num, drawing_name, width, height, individual_rate" \
+                        " from drawings as d join customers as c on () where user_id = "+ self.user_id + ";"
+        # id_drawings, drawing_name, drawing_num, width, height, individual_rate, id_projects, paid
+
+    def showUnpaidDrawings(self):
+        print("Unpaid")
+
+    def showPaidDrawings(self):
+        print("Unpaid")

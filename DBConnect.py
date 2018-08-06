@@ -6,6 +6,8 @@ class DBConnect:
         # self.query = _query
         self.conn = pymysql.connect('localhost', 'root', 'SqlAccount!23', 'DMP', charset='utf8')
         self.c = self.conn.cursor()
+    # def getCursor(self):
+    #     self.conn.cursor()
 
     def execute(self, _query):
         self.c.execute(_query)
