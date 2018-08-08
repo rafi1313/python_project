@@ -5,7 +5,8 @@ from Project import Project
 class User:
     def __init__(self, _id):
         self.user_id = _id
-        print("user ID: "+str(self.user_id))
+        self.db = DBConnect()
+        # print("user ID: "+str(self.user_id))
         self.conn = pymysql.connect('localhost', 'root', 'SqlAccount!23', 'DMP', charset='utf8')
         self.c = self.conn.cursor()
         self.menu()
@@ -16,8 +17,8 @@ class User:
         print("K-pokaż klientów")
         print("P-pokaż projekty")
         print("A-dodaj projekt")
-        print("U-usuń projekt")
-        print("Z-zarządzaj wybranym projektem")
+        # print("U-usuń projekt")
+        print("M-zarządzaj wybranym projektem")
         print("R - Pokaż wszystkie rysunki")
         print("Z - Pokaż listę rozliczonych rysunków")
         print("N - Pokaż listę nierozliczonych rysunków")
@@ -40,10 +41,12 @@ class User:
                 self.showProjects()
             elif option == "A":
                 self.addProject()
-            elif option == "U":
-                self.deleteProject()
+            # elif option == "U":
+            #     self.deleteProject()
             elif option == "R":
                 self.showDrawings()
+            elif option == "M":
+                self.manageProject()
             elif option == "Z":
                 self.showPaidDrawings()
             elif option == "N":
@@ -80,12 +83,12 @@ class User:
                 "where id_users = " + str(self.user_id) + " order by project_name"
         self.c.execute(query)
         result = self.c.fetchall()
-        i = 1
+
         print('|%3s|%20s|%20s|%20s|%20s|%20s' % (
-            "No", "Nazwa projektu", "Nazwa klienta", "start projektu", "termin projektu", "stawka za A0 [PLN]"))
+            "ID", "Nazwa projektu", "Nazwa klienta", "start projektu", "termin projektu", "stawka za A0 [PLN]"))
         for row in result:
-            print('|%3i|%20s|%20s|%20s|%20s|%20s' % (i, row[1], row[2], row[3], row[4], row[5]))
-            i += 1
+            print('|%3i|%20s|%20s|%20s|%20s|%20s' % (row[0], row[1], row[2], row[3], row[4], row[5]))
+
 
     def showClients(self):
         # pokazanie listy projektów
@@ -122,26 +125,52 @@ class User:
         self.conn.commit()
 
         query = "INSERT INTO projects_has_users (Users_id_Users, customers_id_customers) " \
-                "values (" + client + ", " + str(self.user_id) + ")"
+                "values (" + str(self.user_id) + ", " + client + ")"
         self.c.execute(query)
         self.conn.commit()
         print("Dodano projekt!")
+        print(" ")
 
-    def deleteProject(self):
-        print("1")
+    # def deleteProject(self):
+    #     print("1")
 
     def manageProject(self):
         self.showProjects()
         selectedProject = input("Podaj ID projektu do zarządzania: ")
-        projectManage = Project(selectedProject)
+        projectManage = Project(selectedProject, self.user_id)
         projectManage.menu()
+
     def showDrawings(self):
-        drawingsQuery = "SELECT customers_name, drawing_num, drawing_name, width, height, individual_rate" \
-                        " from drawings as d join customers as c on () where user_id = "+ self.user_id + ";"
-        # id_drawings, drawing_name, drawing_num, width, height, individual_rate, id_projects, paid
+        drawingsQuery = "select d.id_drawings, drawing_name, drawing_num, width, height, individual_rate,project_name" \
+                        " from drawings as d left join projects as p on (d.id_projects=p.id_projects) " \
+                        "join projects_has_users as phu on (phu.projects_id_projects = p.id_projects) " \
+                        "where Users_id_Users = "+ str(self.user_id) + ";"
+        result = self.db.fetchAll(drawingsQuery)
+        print('|%3s|%40s|%20s|%20s|%20s|%20s|%20s' %
+              ("ID", "Nazwa rysunku", "Numer rysunku", "Szerokość rys.", "Wysokość rys.", "stawka za A0 [PLN]", "Nazwa projektu"))
+        for row in result:
+            print('|%3i|%40s|%20s|%20s|%20s|%20s|%20s' % (row[0], row[1], row[2], row[3], row[4], row[5], row[6]))
 
     def showUnpaidDrawings(self):
-        print("Unpaid")
+        drawingsQuery = "select d.id_drawings, drawing_name, drawing_num, width, height, individual_rate,project_name" \
+                        " from drawings as d left join projects as p on (d.id_projects=p.id_projects) " \
+                        "join projects_has_users as phu on (phu.projects_id_projects = p.id_projects) " \
+                        "where (Users_id_Users = " + str(self.user_id) + " AND paid =0);"
+        result = self.db.fetchAll(drawingsQuery)
+        print('|%3s|%40s|%20s|%20s|%20s|%20s|%20s' %
+              ("ID", "Nazwa rysunku", "Numer rysunku", "Szerokość rys.", "Wysokość rys.", "stawka za A0 [PLN]",
+               "Nazwa projektu"))
+        for row in result:
+            print('|%3i|%40s|%20s|%20s|%20s|%20s|%20s' % (row[0], row[1], row[2], row[3], row[4], row[5], row[6]))
 
     def showPaidDrawings(self):
-        print("Unpaid")
+        drawingsQuery = "select d.id_drawings, drawing_name, drawing_num, width, height, individual_rate,project_name" \
+                        " from drawings as d left join projects as p on (d.id_projects=p.id_projects) " \
+                        "join projects_has_users as phu on (phu.projects_id_projects = p.id_projects) " \
+                        "where (Users_id_Users = " + str(self.user_id) + " AND paid =1);"
+        result = self.db.fetchAll(drawingsQuery)
+        print('|%3s|%40s|%20s|%20s|%20s|%20s|%20s' %
+              ("ID", "Nazwa rysunku", "Numer rysunku", "Szerokość rys.", "Wysokość rys.", "stawka za A0 [PLN]",
+               "Nazwa projektu"))
+        for row in result:
+            print('|%3i|%40s|%20s|%20s|%20s|%20s|%20s' % (row[0], row[1], row[2], row[3], row[4], row[5], row[6]))
