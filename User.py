@@ -119,7 +119,7 @@ class User:
         self.c.execute("SET FOREIGN_KEY_CHECKS=0")
         insertQueryToProjects = "INSERT INTO projects (project_name, rate_per_drawing, project_date, " \
                                 "project_deadline, id_customers) values ('" + projectName + "', " + projectRate +\
-                                ", '"+projectDate+"', '"+projectDeadline+"', " + str(self.user_id)+")"
+                                ", '"+projectDate+"', '"+projectDeadline+"', " + client+")"
 
         self.c.execute(insertQueryToProjects)
         self.conn.commit()
